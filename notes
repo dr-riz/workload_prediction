@@ -1,0 +1,339 @@
+
+
+title = ['preg', 'plas', 'pres', 'skin', 'test', 'mass', 'pedi', 'age', 'class']
+data = pandas.read_csv(url, names=title)
+peek = data.head(20)
+print(peek)
+
+[method for method in dir(data) if callable(getattr(data, method))]
+
+
+pl.plot(np.array(XsavedArr[:,0]),np.array(XsavedArr[:,1]),
+        'x-',label = 'Xsaved')
+		
+plt.plot(rescaledX)
+
+pandas.DataFrame(data=rescaledX,    # values
+...              index=data[1:,0],    # 1st column as index
+...              columns=data[0,1:])
+
+
+df = pandas.DataFrame(data=rescaledX,columns=names[0:8])
+df.hist()
+plt.show()
+
+,    # values
+...              index=data[1:,0],    # 1st column as index
+...              columns=data[0,1:])
+
+
+= data description =
+- all numeric data
+- classification problem
+- isn't data set of 768 instances small?
+- mean and median are close for data but not equal. 
+- features are not comparable in scale. e.g. plasma is in 100s and pedigree is in decimal point. would require normalization
+- weak coorelation between features
+- data is midly? skewed. how much skeness is bad skewness?
+
+= visualization =
+- mostly positive skewed data, few normal-like or mildly negative
+- age skewed towards smaller values, not enough enough represention for higher ages
+- corrlation matrix plot: not much correlation
+- scatterplot: some linear relationship between mass and skin. does it matter who is on y-axis in correlation?
+- 
+
+
+- how can I find out what are the trade offs of the feature selection algorithms?
+- 
+
+
+= data description =
+- regression problem. need to predict expected throughput and response time
+- trade-order, trade-update and new-order have strong skew i.e. > 1
+- request count(#) have low skew
+- trade-order(tps) has surprisingly poor correlation (0.12) to trade-order(#), has better (0.45) correlation to trade-update(#)
+- trade-update(tps) has low correlation to trade-update(#)
+- request count are indepedent attributes. the values of request throughput depends on request count. they are dependent.
+- intersted in throughput of new-order, payment, trade-order, trade-payment
+- 
+
+== visuslization ==
+- frequey plot: show normal-like curves except for:
+* trade-order(tps) and trade-payment(tps) are highly and mildly both positively skewed respectively, 
+* new-order(tps) and payment (tps) have mild humps
+* other are normal-like
+- histograms: 
+* workload is normal-like
+* trade-order(tps) and trade-payment(tps) are highly and mildly both positively skewed respectively, 
+* others are NOT normal-like -- SHARP CONTRAST TO 3rd point of frequey plot
+- box-whisker plot
+* outliers in increasing order: new-order, trade-payment, trade-order. trade-order has a lot
+- scatter plot for correlation
+* can see correlation between new-order(#) and payment(#), and new-order(tps) and payment(tps) respectively
+
+== clean/massage data ==
+- features are of similar scale, no need to normalize
+- throughput are at different tps. will build model on them one at a time
+
+== feature selection ==
+- start with one linear-most feature. e.g. payment
+- cross fold validation
+- evaluate a number of algorithms on r2
+
+
+
+
+ 
+
+header=['workload','Q1_c','Q6_c','Q12_c','Q21_c','new_order_c','payment_c','trade_order_c','trade_update_c','Q1_t','Q6_t','Q12_t','Q21_t','new_order_t','payment_t','trade_order_t','trade_update_t']
+names=header
+index=header
+url="./data_tp.csv"
+data=pandas.read_csv(url, names=header)
+
+df = data.values
+del df['workload']
+del df['Q1(tps)']
+del df['Q6(tps)']
+del df['Q12(tps)']
+del df['Q21(tps)']
+
+array = df.values
+array[0]
+x = array[:,0:8]
+x
+y = array[:,9]
+y
+
+array = data.values
+x = array[:,1:8]
+y = array[:,13:]
+
+from sklearn import model_selection
+from sklearn.linear_model import LinearRegression
+from sklearn import svm
+from sklearn import gaussian_process
+from sklearn.neural_network import MLPClassifier
+from sklearn.neural_network import MLPRegressor
+
+num_samples = 10
+test_size = 0.33
+num_instances = len(x)
+seed = 7
+kfold = model_selection.ShuffleSplit(n_splits=10, test_size=test_size, random_state=seed)
+model = gaussian_process.GaussianProcessRegressor(kernel='rbf')
+results = model_selection.cross_val_score(model, X, Y, cv=kfold)
+print("MAE: %.3f (%.3f)") % (results.mean(), results.std())
+
+
+
+
+
+# import 
+import pandas as pd
+
+scatter_matrix(data)
+plt.show()
+
+
+from sklearn import model_selection
+from sklearn.linear_model import LinearRegression
+from sklearn import svm
+from sklearn import gaussian_process
+from sklearn.neural_network import MLPClassifier
+from sklearn.neural_network import MLPRegressor
+from sklearn.gaussian_process.kernels import ConstantKernel, RBF
+import matplotlib.pyplot as plt
+import numpy
+from sklearn.model_selection import GridSearchCV
+
+kfold = model_selection.KFold(n_splits=10, random_state=seed)
+model = gaussian_process.GaussianProcessRegressor(ConstantKernel(constant_value=1.0, constant_value_bounds=(0.0, 10.0)))
+metric='neg_mean_absolute_error'
+results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=metric)
+print(metric + ": %.3f (%.3f)") % (results.mean(), results.std())
+
+df = data
+df = df.drop(df[df.trade_order_t<=0].index)
+array = df.values
+X = array[:,1:9]
+PM = array[:,14] #payment
+TO = array[:,15] #trade order
+Y=TO
+num_instances = len(X)
+seed = 7
+
+models = []
+models.append(('LR', LinearRegression()))
+models.append(('svm(linear)', svm.SVR(kernel='linear')))
+models.append(('svm(rbf)', svm.SVR(kernel='rbf', C=8192.0, gamma=2**-15)))
+models.append(('gp(rbf)', gaussian_process.GaussianProcessRegressor()))
+models.append(('mlp', MLPRegressor()))
+
+# evaluate each model in turn
+results = []
+names = []
+#scoring='r2'
+scoring='neg_mean_absolute_error'
+for name, model in models:
+	kfold = model_selection.KFold(n_splits=10, random_state=seed)
+	cv_results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
+	results.append(cv_results)
+	names.append(name)
+	msg = "%s:%s %f (%f)" % (name, scoring, cv_results.mean(), cv_results.std())
+	print(msg)
+
+
+C = numpy.array([2**-5, 2**-3, 2**-1, 2**1, 2**3, 2**5, 2**7, 2**9, 2**11, 2**13, 2**15])
+gamma = numpy.array([2**-15, 2**-11, 2**-7, 2**-3, 2**1, 2**5])
+param_grid = dict(C=C, gamma=gamma)
+model = svm.SVR(kernel='rbf')
+grid = GridSearchCV(estimator=model, param_grid=param_grid, scoring=scoring)
+grid.fit(X, Y)
+print(grid.best_score_)
+print(grid.best_estimator_.C)
+print(grid.best_estimator_.gamma)
+	
+
+# Fit the model on 33%
+LR=LinearRegression()
+LR.fit(X, Y)	
+	
+	
+	
+	
+# boxplot algorithm comparison
+fig = plt.figure()
+fig.suptitle('Algorithm Comparison')
+ax = fig.add_subplot(111)
+plt.boxplot(results)
+ax.set_xticklabels(names)
+plt.show()
+
+
+
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import f_regression
+# feature extraction
+test = SelectKBest(score_func=f_regression, k=4)
+fit = test.fit(X, Y)
+# summarize scores
+numpy.set_printoptions(precision=3)
+print(fit.scores_)
+features = fit.transform(X)
+# summarize selected features
+print(features[0:5,:])
+
+
+= data description =
+- split between independent variables and dependent variables
+- independent variables have good range of values
+- consider payment(tps) as example
+* v large stdev
+* median larger than mean
+* 25%  percentile is zero
+* strong corrleation with payment(#)
+- most histograms are non-normal
+- outliers in Q6, Q12, trade-order
+
+
+
+Lesson 8: Algorithm Evaluation Metrics
+
+
+# Cross-Validation Classification LogLoss
+from pandas import read_csv
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import LogisticRegression
+url = "./pima-indians-diabetes.data"
+names = ['preg', 'plas', 'pres', 'skin', 'test', 'mass', 'pedi', 'age', 'class']
+dataframe = read_csv(url, names=names)
+array = dataframe.values
+X = array[:,0:8]
+Y = array[:,8]
+kfold = KFold(n_splits=10, random_state=7)
+model = LogisticRegression()
+scoring = 'accuracy'
+results = cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
+print scoring + (": %.3f (%.3f)") % (results.mean(), results.std())
+
+kfold = KFold(n_splits=10, random_state=7)
+from sklearn.linear_model import Ridge
+model = Ridge()
+model.fit(X,Y)
+results = cross_val_score(model, X, Y, cv=kfold)
+print scoring + (": %.3f (%.3f)") % (results.mean(), results.std())
+
+
+
+Lesson 10: Model Comparison and Selection
+
+# Compare Algorithms
+from pandas import read_csv
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import Ridge
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+
+# prepare models
+models = []
+models.append(('LR', LogisticRegression()))
+models.append(('LDA', LinearDiscriminantAnalysis()))
+models.append(('Ridge', Ridge()))
+# evaluate each model in turn
+results = []
+names = []
+for name, model in models:
+	kfold = KFold(n_splits=10, random_state=7)
+	cv_results = cross_val_score(model, X, Y, cv=kfold)
+	results.append(cv_results)
+	names.append(name)
+	msg = "%s: %f (%f)" % (name, cv_results.mean(), cv_results.std())
+	print(msg)
+
+
+	
+alphas = numpy.array([1,0.1,0.01,0.001,0.0001,0])
+param_grid = dict(alpha=alphas)
+model = Ridge()
+grid = GridSearchCV(estimator=model, param_grid=param_grid)
+grid.fit(X, Y)
+print(grid.best_score_)
+print(grid.best_estimator_.alpha)
+
+
+Lesson 11: Improve Accuracy with Algorithm Tuning
+# Grid Search for Algorithm Tuning
+from pandas import read_csv
+import numpy
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV
+url = "./pima-indians-diabetes.data"
+names = ['preg', 'plas', 'pres', 'skin', 'test', 'mass', 'pedi', 'age', 'class']
+dataframe = read_csv(url, names=names)
+array = dataframe.values
+X = array[:,0:8]
+Y = array[:,8]
+
+alphas = numpy.array([1,0.1,0.01,0.001,0.0001,0])
+param_grid = dict(alpha=alphas)
+model = Ridge()
+grid = GridSearchCV(estimator=model, param_grid=param_grid, verbose='5')
+grid.fit(X, Y)
+print(grid.best_score_)
+print(grid.best_estimator_.alpha)
+
+
+Lesson 12: Improve Accuracy with Ensemble Predictions
+
+from sklearn.model_selection import cross_val_score
+from sklearn.ensemble import RandomForestClassifier
+num_trees = 100
+max_features = 3
+kfold = KFold(n_splits=10, random_state=7)
+model = RandomForestClassifier(n_estimators=num_trees, max_features=max_features)
+results = cross_val_score(model, X, Y, cv=kfold)
+print(results.mean())
